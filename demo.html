@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>文件上传</title>
+	<style type="text/css">
+		.box{
+			width: 300px;
+			height: 300px;
+			position: relative;
+			border: 1px solid #0ff;
+		}
+		.box .img{
+			width: 100%;
+			height: 285px;
+			/*background: #f00;*/
+		}
+		.box .img img{
+			width:100%;
+			height: 100%;
+		}
+		.progress{
+			width: 0%;
+			height: 15px;
+			position: absolute;
+			left: 0;
+			bottom: 0;
+			text-align: center;
+			line-height: 12px;
+			background: pink;
+		}
+	</style>
+</head>
+<body>
+	<input type="file" multiple="multiple" class="one"/>
+	<div class="box">
+		<div class="img">
+			<img src="" alt="" />
+		</div>
+		<div class="progress"></div>
+	</div>
+</body>
+<script>
+function upload(imgurl,inputObj,progress,imgObj){
+//	console.log(inputObj.nodeName);
+	inputObj=inputObj||{};
+	if(inputObj.nodeName=="INPUT"){
+		this.inputObj=inputObj;
+	}else if(typeof inputObj=="string"){
+//		console.log(typeof inputObj=="string")
+		this.inputObj=document.querySelector(inputObj);
+	}
+	
+	progress=progress||{};
+	if(progress.nodeName=="PROGRESS"){
+		this.progress=progress;
+	}else if(typeof progress=="string"){
+		this.progress=document.querySelector(progress);
+	}
+	
+	imgObj=imgObj||{};
+	if(imgObj.nodeName=="IMG"){
+		this.imgObj=imgObj;
+	}else if(typeof imgObj=="string"){
+		this.imgObj=document.querySelector(imgObj);
+	}
+	this.type=["jpeg","jpg","png","gif","zip"];
+	this.size=1024*1024*20;
+	this.uploadname="file";
+	this.imgurl=imgurl;
+}
+	upload.prototype={
+		up:function(callback){
+			if(this.imgurl){
+				this.callback=callback;
+				this.getcon();
+			}else{
+				alert("地址不对请输入地址!!");
+			}
+			
+		},
+		getcon:function(){
+			var that=this;
+			this.inputObj.onchange=function(){
+				that.data=this.files[0];
+				var read=new FileReader();
+				read.onload=function(e){
+//					console.log(1)
+//					console.log(that.imgObj)
+					that.imgObj.src=e.target.result;
+//					console.log(e.target.result)
+				}
+				read.readAsDataURL(that.data);
+				if(that.check()){
+					that.upfile();
+				}		
+			}	
+		},
+		check:function(){
+			var that=this;
+//			console.log(that.data)
+			var data=that.data;
+//			console.log(data)
+			var size=data.size;
+//			console.log(size)
+			var extname=data.name.substr(data.name.lastIndexOf(".")+1).toLowerCase();
+//			console.log(extname);
+			if(size>that.size){
+				alert("文件过大，请重新选择文件");
+				return;
+			}
+			var flag=false;
+			for(var i =0;i<that.type.length;i++){
+				if(that.type[i]==extname){
+					flag=true;
+					break;
+				}
+			}
+			if(!flag){
+				alert("格式不对");
+				return false;
+			}
+			return true;
+		},
+		upfile:function(){
+//			alert(1)
+			var that=this;
+			var ajax=new XMLHttpRequest();
+			var form=new FormData();
+			form.append(that.uploadname,that.data);
+			ajax.upload.onprogress=function(e){
+				var total=e.total;
+				var loaded=e.loaded;
+				var scale=loaded/total*100;
+				that.progress.style.width=scale+"%";
+			}
+			ajax.onload=function(){
+				that.callback(ajax.response);
+			}
+			ajax.open("post",that.imgurl);
+			ajax.send(form);
+		}
+	}
+
+	window.onload=function(){
+		var obj =new upload("upload.php","input",".progress","img"); 
+	//	console.log(obj)
+		obj.up(function(e){
+			console.log(e)
+		});
+	}
+</script>
+</html>
